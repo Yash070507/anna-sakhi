@@ -273,18 +273,27 @@ async def health():
 
 def generate_gemini_content(client, contents, system_instruction, temperature=0.7):
     last_err = None
-    http_opts = types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1))
+    http_opts = None
+    try:
+        if hasattr(types, "HttpRetryOptions") and hasattr(types, "HttpOptions"):
+            http_opts = types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1))
+    except Exception:
+        http_opts = None
+
     for model_name in MODELS_TO_TRY:
         try:
+            cfg_kwargs = {
+                "system_instruction": system_instruction,
+                "temperature": temperature,
+                "max_output_tokens": 2048,
+            }
+            if http_opts:
+                cfg_kwargs["http_options"] = http_opts
+
             response = client.models.generate_content(
                 model=model_name,
                 contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=temperature,
-                    max_output_tokens=2048,
-                    http_options=http_opts,
-                ),
+                config=types.GenerateContentConfig(**cfg_kwargs),
             )
             if response and response.text:
                 return response.text
