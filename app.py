@@ -273,6 +273,7 @@ class HistoryItem(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: List[HistoryItem] = []
+    userMemory: Optional[List[str]] = []
 
 # DB models
 class ProfileUpdate(BaseModel):
@@ -400,10 +401,20 @@ async def chat(body: ChatRequest):
     ] + [
         types.Content(role="user", parts=[types.Part.from_text(text=body.message)])
     ]
+
+    system_inst = SYSTEM_INSTRUCTION
+    if body.userMemory and len(body.userMemory) > 0:
+        mem_bullets = "\n".join(f"- {m}" for m in body.userMemory)
+        system_inst += (
+            "\n\nUSER'S PERSONAL PREFERENCES & MEMORY (remember across all chats):\n"
+            f"{mem_bullets}\n"
+            "Always remember and respect these tastes, go-to foods, and dietary choices across every conversation."
+        )
+
     text = generate_gemini_content(
         client=client,
         contents=contents,
-        system_instruction=SYSTEM_INSTRUCTION,
+        system_instruction=system_inst,
         temperature=0.75,
     )
     return {"text": text}

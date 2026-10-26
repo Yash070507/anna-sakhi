@@ -81,9 +81,9 @@ export async function analyseImage(base64Data, mimeType = 'image/jpeg', userText
  * @param {Array}  history  – [{role: 'user'|'assistant', content: string}]
  * @returns {Promise<string|null>}
  */
-export async function analyseText(userMessage, history = []) {
+export async function analyseText(userMessage, history = [], userMemory = []) {
   try {
-    const data = await post('/api/chat', { message: userMessage, history });
+    const data = await post('/api/chat', { message: userMessage, history, userMemory });
     return data.text ?? null;
   } catch (err) {
     if (isNetworkError(err)) {

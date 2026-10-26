@@ -2,6 +2,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { analyseImage, analyseText } from '../services/geminiVision';
 import {
+  extractPreferences,
+  getStoredMemory,
+  saveStoredMemory,
+} from '../services/memoryService';
+import {
   getSessions,
   createSession,
   deleteSession,
@@ -18,11 +23,11 @@ function parseDataUrl(dataUrl) {
   return { mimeType: match[1], base64: match[2] };
 }
 
-/** Build conversation history for Gemini context (last 6 messages) */
+/** Build conversation history for Gemini context (last 30 messages) */
 function buildHistory(messages) {
   return messages
     .filter((m) => m.type === 'text' && m.content)
-    .slice(-6)
+    .slice(-30)
     .map((m) => ({ role: m.role, content: m.content }));
 }
 
@@ -59,7 +64,37 @@ export function useChat() {
   const [isTyping, setIsTyping]           = useState(false);
   const [isNewChat, setIsNewChat]         = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [userMemory, setUserMemory]       = useState(() => getStoredMemory(user));
   const abortRef = useRef(false);
+
+  // ── Sync user memory when user changes or event fires ─────
+  useEffect(() => {
+    setUserMemory(getStoredMemory(user));
+    const handleMemoryUpdate = (e) => {
+      if (e.detail) setUserMemory(e.detail);
+    };
+    window.addEventListener('anna_sakhi_memory_updated', handleMemoryUpdate);
+    return () => window.removeEventListener('anna_sakhi_memory_updated', handleMemoryUpdate);
+  }, [user]);
+
+  const addUserMemory = useCallback((item) => {
+    if (!item || !item.trim()) return;
+    const clean = item.trim();
+    setUserMemory((prev) => {
+      if (prev.includes(clean)) return prev;
+      const next = [...prev, clean];
+      saveStoredMemory(user, next);
+      return next;
+    });
+  }, [user]);
+
+  const removeUserMemory = useCallback((item) => {
+    setUserMemory((prev) => {
+      const next = prev.filter((m) => m !== item);
+      saveStoredMemory(user, next);
+      return next;
+    });
+  }, [user]);
 
   // ── Load sessions on mount / user change ─────────────────
   useEffect(() => {
@@ -204,6 +239,15 @@ export function useChat() {
         );
       }
 
+      // ── Detect and persist user preferences / go-to foods ──
+      const detectedPref = extractPreferences(text);
+      let activeMemory = userMemory;
+      if (detectedPref && !activeMemory.some((m) => m.toLowerCase() === detectedPref.toLowerCase())) {
+        activeMemory = [...activeMemory, detectedPref];
+        setUserMemory(activeMemory);
+        saveStoredMemory(user, activeMemory);
+      }
+
       // ── Call Gemini ────────────────────────────────────────
       let responseText = null;
 
@@ -213,7 +257,7 @@ export function useChat() {
           responseText = await analyseImage(parsed.base64, parsed.mimeType, text);
         }
       } else {
-        responseText = await analyseText(text, buildHistory(messages));
+        responseText = await analyseText(text, buildHistory(messages), activeMemory);
       }
 
       if (abortRef.current) return;
@@ -259,7 +303,7 @@ export function useChat() {
     } finally {
       setIsTyping(false);
     }
-  }, [isTyping, isNewChat, activeConvId, messages, user]);
+  }, [isTyping, isNewChat, activeConvId, messages, user, userMemory]);
 
   return {
     conversations,
@@ -268,6 +312,9 @@ export function useChat() {
     isTyping,
     isNewChat,
     loadingHistory,
+    userMemory,
+    addUserMemory,
+    removeUserMemory,
     startNewChat,
     selectConversation,
     sendMessage,
