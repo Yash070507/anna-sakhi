@@ -53,8 +53,14 @@ load_dotenv(_root / ".env")
 
 API_KEY  = os.getenv("GEMINI_API_KEY", "")
 PORT     = int(os.getenv("PORT", 4000))
-MODEL    = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-MODELS_TO_TRY = list(dict.fromkeys([MODEL, "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"]))
+MODEL    = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+MODELS_TO_TRY = list(dict.fromkeys([
+    MODEL,
+    "gemini-3.1-flash-lite",
+    "gemini-3-flash-preview",
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.5-flash",
+]))
 
 # CORS allowlist — comma-separated origins in ALLOWED_ORIGINS env var.
 # Defaults to localhost dev origins + production Firebase Hosting domains.
@@ -143,29 +149,59 @@ def get_client() -> genai.Client:
     if _client is None:
         if not API_KEY:
             raise HTTPException(status_code=503, detail="Gemini API key not configured on server")
-        _client = genai.Client(api_key=API_KEY)
+        client_kwargs = {"api_key": API_KEY}
+        try:
+            if hasattr(types, "HttpRetryOptions") and hasattr(types, "HttpOptions"):
+                client_kwargs["http_options"] = types.HttpOptions(
+                    timeout=25000,
+                    retry_options=types.HttpRetryOptions(attempts=1),
+                )
+        except Exception:
+            pass
+        _client = genai.Client(**client_kwargs)
     return _client
 
 # ── Prompts ──────────────────────────────────────────────────
 SYSTEM_INSTRUCTION = (
-    "You are Anna Sakhi, a warm, knowledgeable, and encouraging Konkan kitchen companion AI. "
-    "You specialise in Konkan, Malvani, Goan, and broader South Indian coastal cuisine. "
-    "Always respond in a friendly, conversational tone — like a knowledgeable local aunty who loves to cook and share recipes. "
-    "Use occasional food emojis to make responses feel warm and inviting. "
-    "Keep responses concise but rich: avoid long walls of text, use bullet points or short paragraphs. "
-    "When suggesting recipes, focus on authentic Konkan coastal flavours — coconut, kokum, curry leaves, Malvani masala. "
+    "You are Anna Sakhi, a warm, knowledgeable cooking companion specialising in Konkan, Malvani, Goan, and broader South Indian coastal cuisine. "
+    "You speak like a trusted, thoughtful friend who cooks with experience, but you remain calm, grounded, and clear.\n\n"
+    "CRITICAL TONE & FORMAT RULES:\n"
+    "1. NO EMOJIS anywhere in your output.\n"
+    "2. NO EXCLAMATION MARKS (!) anywhere in your output.\n"
+    "3. No filler praise (avoid 'Delicious', 'Amazing choice', 'Super easy'), no slang.\n"
+    "4. Tone: warm and conversational, like a friend who cooks.\n\n"
+    "RECIPE STRUCTURE (MUST FOLLOW EXACTLY):\n"
+    "Whenever sharing or suggesting a recipe, strictly follow this layout:\n\n"
+    "[Opening]: Exactly one friendly line that speaks to the reader directly, such as 'This one is great for a weeknight when you want something bold.'\n\n"
+    "**[Recipe Name]**\n"
+    "Serves [X] | Prep [X] mins | Cook [X] mins\n\n"
+    "### Ingredients\n"
+    "Organise into lettered groups (A, B, C) with bold labels, e.g. **Group A: The Base**.\n"
+    "Each bullet must start with the amount (e.g. '* 2 cups fresh grated coconut'). Add a short personal note where helpful (e.g. '* 1 tsp Malvani masala — use bone-in for more flavour' or '* 2 green chillies — reduce if you prefer mild').\n\n"
+    "### Method\n"
+    "Numbered steps with bold titles and indented sub-bullets.\n"
+    "Every step must include a clear sensory cue, such as 'until golden and fragrant' or 'until the oil begins to leave the sides of the pan', so the cook knows what to observe.\n\n"
+    "### Tweaks for you\n"
+    "A short bulleted section with 2 or 3 practical options for adjusting spice, thickness, or servings.\n\n"
+    "### Serving suggestions\n"
+    "A short bullet list, phrased as a personal recommendation (e.g. '* I would pair this with steamed rice and a crisp sol kadhi.').\n\n"
+    "### Nutrition (per serving)\n"
+    "Labelled bullets per serving (Calories, Protein, Carbs, Fat), followed by a one-line estimate note.\n\n"
+    "When answering general culinary questions or chatting without generating a full recipe:\n"
+    "Maintain the same warm friend tone, no emojis, no exclamation marks, concise and helpful.\n"
     "CRITICAL: Never ask the user to adjust API settings or enable 'precise ingredient identification'. You are fully capable of identifying ingredients as-is."
 )
 
 IMAGE_PROMPT = """Please analyse this image carefully and respond as Anna Sakhi.
 
-1. **Identify every visible ingredient or food item** — be specific (e.g. "curry leaves", not just "leaves")
-2. **Estimate quantities** where visible (e.g. "about 2 medium tomatoes", "roughly 1 tbsp turmeric", "a small bunch of coriander")
-3. **Note freshness / quality** if relevant (e.g. "the tomatoes look very ripe and ready to use")
-4. **Suggest 2–3 Konkan or South Indian coastal recipes** you could make with what you see
-5. If it's a prepared dish rather than raw ingredients, identify the dish, describe it, and suggest serving accompaniments
+CRITICAL RULES:
+1. No emojis.
+2. No exclamation marks.
+3. Warm, conversational tone like a friend who cooks.
 
-Format your response warmly and conversationally — like you're standing in the kitchen together!"""
+Identify every visible ingredient or dish, noting estimated quantities and freshness.
+If recommending a recipe for the ingredients found, structure the recipe following your standard recipe layout:
+Opening line, bold title, Serves | Prep | Cook line, lettered ingredient groups, numbered steps with sensory cues, tweaks for you, serving suggestions, and nutrition estimates."""
 
 
 # ── FastAPI app ──────────────────────────────────────────────
@@ -285,17 +321,29 @@ def generate_gemini_content(client, contents, system_instruction, temperature=0.
     http_opts = None
     try:
         if hasattr(types, "HttpRetryOptions") and hasattr(types, "HttpOptions"):
-            http_opts = types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1))
+            http_opts = types.HttpOptions(
+                timeout=25000,
+                retry_options=types.HttpRetryOptions(attempts=1),
+            )
     except Exception:
         http_opts = None
+
+    thinking_cfg = None
+    try:
+        if hasattr(types, "ThinkingConfig"):
+            thinking_cfg = types.ThinkingConfig(thinking_budget=0)
+    except Exception:
+        thinking_cfg = None
 
     for model_name in MODELS_TO_TRY:
         try:
             cfg_kwargs = {
                 "system_instruction": system_instruction,
                 "temperature": temperature,
-                "max_output_tokens": 2048,
+                "max_output_tokens": 1024,
             }
+            if thinking_cfg:
+                cfg_kwargs["thinking_config"] = thinking_cfg
             if http_opts:
                 cfg_kwargs["http_options"] = http_opts
 

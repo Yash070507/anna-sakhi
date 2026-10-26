@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
-import { X } from 'lucide-react';
+import { X, Copy, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { AssistantAvatar } from '../ui/Avatar';
 import { RecipeCard } from '../recipe/RecipeCard';
 
@@ -124,30 +125,132 @@ function UserBubble({ message }) {
   );
 }
 
+// ─── Markdown Renderer ────────────────────────────────────
+function MarkdownContent({ content }) {
+  if (!content) return null;
+
+  return (
+    <ReactMarkdown
+      components={{
+        h1: ({ children }) => (
+          <h1 className="text-lg font-bold text-earth-900 dark:text-earth-100 mt-3 mb-2">
+            {children}
+          </h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="text-base font-bold text-earth-900 dark:text-earth-100 mt-4 mb-2">
+            {children}
+          </h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="text-xs font-bold uppercase tracking-wider text-palm-800 dark:text-palm-300 mt-5 mb-2.5 pb-1 border-b border-palm-200/60 dark:border-palm-800/50">
+            {children}
+          </h3>
+        ),
+        p: ({ children }) => {
+          const text = Array.isArray(children)
+            ? children.map((c) => (typeof c === 'string' ? c : '')).join('')
+            : typeof children === 'string'
+            ? children
+            : '';
+
+          // Check for recipe metadata line: "Serves X | Prep Y mins | Cook Z mins"
+          if (text.includes('Serves') && text.includes('|')) {
+            return (
+              <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1.5 my-2.5 bg-palm-50 dark:bg-palm-950/40 text-palm-800 dark:text-palm-300 rounded-lg text-xs font-medium border border-palm-200/60 dark:border-palm-800/40 shadow-xs">
+                {children}
+              </div>
+            );
+          }
+          return <p className="text-sm leading-relaxed my-2 text-[var(--text-primary)]">{children}</p>;
+        },
+        ul: ({ children }) => (
+          <ul className="space-y-1.5 my-2 pl-4 list-disc marker:text-palm-600 dark:marker:text-palm-400">
+            {children}
+          </ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="space-y-3.5 my-3 pl-4 list-decimal marker:font-bold marker:text-palm-700 dark:marker:text-palm-300">
+            {children}
+          </ol>
+        ),
+        li: ({ children }) => (
+          <li className="text-sm leading-relaxed text-[var(--text-primary)] pl-0.5">
+            {children}
+          </li>
+        ),
+        strong: ({ children }) => (
+          <strong className="font-semibold text-earth-900 dark:text-earth-100">
+            {children}
+          </strong>
+        ),
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-2 border-palm-400 pl-3 my-2 text-sm italic text-[var(--text-muted)]">
+            {children}
+          </blockquote>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
+
 // ─── Assistant Bubble ─────────────────────────────────────
 function AssistantBubble({ message }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    if (!message.content) return;
+    navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [message.content]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8, x: -8 }}
       animate={{ opacity: 1, y: 0, x: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex gap-3 mb-4"
+      className="flex gap-3 mb-4 group"
     >
       <AssistantAvatar size="md" className="flex-shrink-0 mt-0.5" />
 
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">
-          Anna Sakhi
-        </p>
+        <div className="flex items-center justify-between mb-1.5 pr-2">
+          <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+            Anna Sakhi
+          </p>
+          {message.content && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-xs text-[var(--text-muted)] hover:text-palm-600 dark:hover:text-palm-400 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/5"
+              title="Copy recipe"
+              aria-label="Copy recipe text"
+            >
+              {copied ? (
+                <>
+                  <Check size={12} className="text-palm-600 dark:text-palm-400" />
+                  <span className="text-[10px] text-palm-600 dark:text-palm-400">Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={12} />
+                  <span className="text-[10px]">Copy</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
 
         {message.type === 'recipe' ? (
           <RecipeCard recipe={message.recipe} />
         ) : (
-          <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-2xl rounded-tl-sm px-4 py-3 shadow-soft max-w-[80%] md:max-w-[70%]">
-            <div
-              className="message-prose text-sm text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{ __html: formatMarkdown(message.content) }}
-            />
+          <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-2xl rounded-tl-sm px-5 py-4 shadow-soft max-w-[95%] md:max-w-[85%] lg:max-w-[80%]">
+            <div className="message-prose text-sm text-[var(--text-primary)]">
+              <MarkdownContent content={message.content} />
+            </div>
           </div>
         )}
 
@@ -197,11 +300,4 @@ function formatTime(date) {
     minute: '2-digit',
     hour12: true,
   }).format(new Date(date));
-}
-
-function formatMarkdown(text) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/\n/g, '<br/>');
 }
