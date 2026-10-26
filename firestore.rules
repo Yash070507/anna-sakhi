@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read/write their own profile
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Pantry items — user only
+      match /pantry/{itemId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // Chat sessions — user only
+      match /sessions/{sessionId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+
+        // Messages within a session
+        match /messages/{messageId} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
+        }
+      }
+
+      // Saved recipes — user only
+      match /recipes/{recipeId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // Image scan results — user only
+      match /scans/{scanId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // Block everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# Anna Sakhi — Python backend dependencies
+# Install with: pip install -r requirements.txt
+#
+# To update a pin: pip install --upgrade <package> && pip freeze | grep <package>
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+python-dotenv==1.0.1
+google-genai==1.16.0
+pydantic==2.10.6
+firebase-admin==6.5.0

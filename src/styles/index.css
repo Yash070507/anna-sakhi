@@ -1,0 +1,196 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ─────────────────────────────── */
+:root {
+  /* Light Mode */
+  --bg-primary:       #FAF7F2;
+  --bg-surface:       #F3EDE3;
+  --bg-elevated:      #FFFFFF;
+  --bg-sidebar:       #F0E8DA;
+  --bg-input:         #FFFFFF;
+
+  --text-primary:     #2C1F0E;
+  --text-secondary:   #7A6A56;
+  --text-muted:       #A8956F;
+  --text-inverse:     #FAF7F2;
+
+  --accent-green:     #2D5016;
+  --accent-green-mid: #4A7C2E;
+  --accent-green-light:#EEF4E8;
+  --accent-sea:       #2E7A8A;
+  --accent-sea-light: #E8F4F7;
+  --accent-terra:     #C4622D;
+  --accent-terra-light:#FBF0EB;
+  --accent-earth:     #8B5E3C;
+
+  --border-subtle:    rgba(44, 31, 14, 0.10);
+  --border-medium:    rgba(44, 31, 14, 0.18);
+
+  --shadow-soft:      0 2px 12px 0 rgba(44, 31, 14, 0.08);
+  --shadow-card:      0 4px 24px 0 rgba(44, 31, 14, 0.10);
+  --shadow-lifted:    0 8px 32px 0 rgba(44, 31, 14, 0.14);
+
+  --sidebar-width:    280px;
+}
+
+.dark {
+  --bg-primary:       #1A1714;
+  --bg-surface:       #232018;
+  --bg-elevated:      #2E2A24;
+  --bg-sidebar:       #1E1B17;
+  --bg-input:         #2E2A24;
+
+  --text-primary:     #EDE8DF;
+  --text-secondary:   #9A8B78;
+  --text-muted:       #6A5E50;
+  --text-inverse:     #1A1714;
+
+  --accent-green:     #5A8A2E;
+  --accent-green-mid: #72A83D;
+  --accent-green-light: rgba(90, 138, 46, 0.15);
+  --accent-sea:       #5FA8BB;
+  --accent-sea-light: rgba(95, 168, 187, 0.15);
+  --accent-terra:     #E07A47;
+  --accent-terra-light: rgba(224, 122, 71, 0.15);
+  --accent-earth:     #B8845A;
+
+  --border-subtle:    rgba(237, 232, 223, 0.08);
+  --border-medium:    rgba(237, 232, 223, 0.14);
+
+  --shadow-soft:      0 2px 12px 0 rgba(0, 0, 0, 0.3);
+  --shadow-card:      0 4px 24px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lifted:    0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Base Styles ───────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar Styling ─────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ─── Utility Classes ───────────────────────────────────── */
+.font-display {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.bg-primary    { background-color: var(--bg-primary); }
+.bg-surface    { background-color: var(--bg-surface); }
+.bg-elevated   { background-color: var(--bg-elevated); }
+.bg-sidebar    { background-color: var(--bg-sidebar); }
+.bg-input      { background-color: var(--bg-input); }
+
+.text-primary   { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted     { color: var(--text-muted); }
+
+.border-subtle  { border-color: var(--border-subtle); }
+.border-medium  { border-color: var(--border-medium); }
+
+.shadow-soft    { box-shadow: var(--shadow-soft); }
+.shadow-card    { box-shadow: var(--shadow-card); }
+.shadow-lifted  { box-shadow: var(--shadow-lifted); }
+
+/* ─── Textarea auto-resize ──────────────────────────────── */
+.composer-textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 24px;
+  max-height: 200px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+/* ─── Message prose ─────────────────────────────────────── */
+.message-prose p { margin-bottom: 0.75rem; }
+.message-prose p:last-child { margin-bottom: 0; }
+.message-prose ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+.message-prose ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+.message-prose li { margin-bottom: 0.25rem; }
+.message-prose strong { font-weight: 600; }
+
+/* ─── Ingredient checkbox ───────────────────────────────── */
+.ingredient-item input[type="checkbox"] {
+  accent-color: var(--accent-green);
+}
+
+/* ─── Typing Dots ───────────────────────────────────────── */
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ─── Sidebar transitions ───────────────────────────────── */
+.sidebar-transition {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Auth card gradient ────────────────────────────────── */
+.auth-bg {
+  background: 
+    radial-gradient(ellipse at 20% 50%, rgba(45, 80, 22, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(46, 122, 138, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(196, 98, 45, 0.08) 0%, transparent 50%),
+    var(--bg-primary);
+}
+
+/* ─── Green accent button ───────────────────────────────── */
+.btn-green {
+  background-color: var(--accent-green);
+  color: var(--text-inverse);
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+.btn-green:hover {
+  background-color: var(--accent-green-mid);
+  box-shadow: 0 4px 16px rgba(45, 80, 22, 0.30);
+  transform: translateY(-1px);
+}
+.btn-green:active {
+  transform: translateY(0);
+}
+
+/* ─── Ghost button ──────────────────────────────────────── */
+.btn-ghost {
+  color: var(--text-secondary);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.btn-ghost:hover {
+  background-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+/* ─── Konkan leaf SVG pattern (subtle) ─────────────────── */
+.konkan-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234A7C2E' fill-opacity='0.04'%3E%3Cpath d='M30 0 C30 0 36 12 30 20 C24 12 30 0 30 0z M10 20 C10 20 22 26 20 34 C14 28 10 20 10 20z M50 20 C50 20 38 26 40 34 C46 28 50 20 50 20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
