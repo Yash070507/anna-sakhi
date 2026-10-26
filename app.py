@@ -183,10 +183,19 @@ app = FastAPI(title="Anna Sakhi API", version="2.0.0", docs_url="/api/docs", lif
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|.*\.web\.app|.*\.firebaseapp\.com|.*\.onrender\.com)(:\d+)?$",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    origin = request.headers.get("origin", "")
+    print(f"[REQ] {request.method} {request.url.path} (origin: {origin})")
+    response = await call_next(request)
+    print(f"[RES] {request.method} {request.url.path} -> {response.status_code}")
+    return response
 
 
 # ── Local IP guard ───────────────────────────────────────────
