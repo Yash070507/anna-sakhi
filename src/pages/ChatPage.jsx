@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, Sparkles } from 'lucide-react';
 import { Sidebar, SidebarContent } from '../components/sidebar/Sidebar';
 import { Drawer } from '../components/ui/Drawer';
 import { MessageList } from '../components/chat/MessageList';
@@ -17,6 +17,7 @@ export default function ChatPage() {
     isTyping,
     isNewChat,
     loadingHistory,
+    memoryNotification,
     startNewChat,
     selectConversation,
     sendMessage,
@@ -70,7 +71,16 @@ export default function ChatPage() {
         </header>
 
         {/* ── Chat area ── */}
-        <main className="flex flex-col flex-1 min-h-0">
+        <main className="flex flex-col flex-1 min-h-0 relative">
+          {/* ── Learned Memory Toast ── */}
+          {memoryNotification && (
+            <div className="absolute top-4 right-4 z-40 flex items-center gap-2.5 bg-earth-900 text-white dark:bg-earth-100 dark:text-earth-950 px-4 py-2 rounded-2xl shadow-lifted border border-palm-400/40 text-xs font-medium animate-in fade-in slide-in-from-top-2">
+              <span className="w-5 h-5 rounded-full bg-palm-600 text-white flex items-center justify-center flex-shrink-0">
+                <Sparkles size={12} />
+              </span>
+              <span>Remembered: <strong>{memoryNotification}</strong></span>
+            </div>
+          )}
           {loadingHistory ? (
             // Loading skeleton while switching sessions
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">

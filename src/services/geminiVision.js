@@ -84,14 +84,17 @@ export async function analyseImage(base64Data, mimeType = 'image/jpeg', userText
 export async function analyseText(userMessage, history = [], userMemory = []) {
   try {
     const data = await post('/api/chat', { message: userMessage, history, userMemory });
-    return data.text ?? null;
+    return {
+      text: data.text ?? null,
+      learned: Array.isArray(data.learned) ? data.learned : [],
+    };
   } catch (err) {
     if (isNetworkError(err)) {
       console.warn('[Anna Sakhi] Backend not reachable — using mock chat response');
-      return MOCK_CHAT;
+      return { text: MOCK_CHAT, learned: [] };
     }
     console.error('[Anna Sakhi] /api/chat error:', err.message);
-    return null;
+    return { text: null, learned: [] };
   }
 }
 

@@ -65,6 +65,7 @@ export function useChat() {
   const [isNewChat, setIsNewChat]         = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [userMemory, setUserMemory]       = useState(() => getStoredMemory(user));
+  const [memoryNotification, setMemoryNotification] = useState(null);
   const abortRef = useRef(false);
 
   // ── Sync user memory when user changes or event fires ─────
@@ -257,7 +258,25 @@ export function useChat() {
           responseText = await analyseImage(parsed.base64, parsed.mimeType, text);
         }
       } else {
-        responseText = await analyseText(text, buildHistory(messages), activeMemory);
+        const result = await analyseText(text, buildHistory(messages), activeMemory);
+        responseText = result?.text;
+        const learned = result?.learned || [];
+        if (learned.length > 0) {
+          let updated = [...activeMemory];
+          let addedAny = false;
+          for (const item of learned) {
+            if (!updated.some((m) => m.toLowerCase() === item.toLowerCase())) {
+              updated.push(item);
+              addedAny = true;
+            }
+          }
+          if (addedAny) {
+            setUserMemory(updated);
+            saveStoredMemory(user, updated);
+            setMemoryNotification(learned.join(' • '));
+            setTimeout(() => setMemoryNotification(null), 4000);
+          }
+        }
       }
 
       if (abortRef.current) return;
@@ -313,6 +332,7 @@ export function useChat() {
     isNewChat,
     loadingHistory,
     userMemory,
+    memoryNotification,
     addUserMemory,
     removeUserMemory,
     startNewChat,

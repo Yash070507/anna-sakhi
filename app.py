@@ -188,7 +188,12 @@ SYSTEM_INSTRUCTION = (
     "### Nutrition (per serving)\n"
     "Labelled bullets per serving (Calories, Protein, Carbs, Fat), followed by a one-line estimate note.\n\n"
     "When answering general culinary questions or chatting without generating a full recipe:\n"
-    "Maintain the same warm friend tone, no emojis, no exclamation marks, concise and helpful.\n"
+    "Maintain the same warm friend tone, no emojis, no exclamation marks, concise and helpful.\n\n"
+    "CRITICAL MEMORY LEARNING RULE:\n"
+    "At the VERY END of your response, if the user explicitly shared ANY personal preference, taste, favorite dish, go-to food, dislike, diet, or cooking habit in their message, append:\n"
+    "<!--MEMORY: [\"Fact 1\", \"Fact 2\"]-->\n"
+    "Keep each fact short and clear (e.g. \"Go-to food: Sol Kadhi\", \"Dislikes: Mushrooms\", \"Diet: Vegetarian\", \"Spice level: High\").\n"
+    "If no personal taste or preference was mentioned, DO NOT append any <!--MEMORY: ...--> tag.\n"
     "CRITICAL: Never ask the user to adjust API settings or enable 'precise ingredient identification'. You are fully capable of identifying ingredients as-is."
 )
 
@@ -411,13 +416,28 @@ async def chat(body: ChatRequest):
             "Always remember and respect these tastes, go-to foods, and dietary choices across every conversation."
         )
 
-    text = generate_gemini_content(
+    raw_text = generate_gemini_content(
         client=client,
         contents=contents,
         system_instruction=system_inst,
         temperature=0.75,
     )
-    return {"text": text}
+
+    clean_text = raw_text
+    learned = []
+    if "<!--MEMORY:" in raw_text:
+        try:
+            parts = raw_text.split("<!--MEMORY:", 1)
+            clean_text = parts[0].strip()
+            mem_raw = parts[1].split("-->")[0].strip()
+            parsed = json.loads(mem_raw)
+            if isinstance(parsed, list):
+                learned = [str(x).strip() for x in parsed if str(x).strip()]
+        except Exception as e:
+            print(f"[Memory] Failed to parse learned tags: {e}")
+            clean_text = raw_text.replace("<!--MEMORY:", "").replace("-->", "").strip()
+
+    return {"text": clean_text, "learned": learned}
 
 
 @app.get("/api/live-key")
