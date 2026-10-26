@@ -53,8 +53,8 @@ load_dotenv(_root / ".env")
 
 API_KEY  = os.getenv("GEMINI_API_KEY", "")
 PORT     = int(os.getenv("PORT", 4000))
-MODEL    = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-MODELS_TO_TRY = list(dict.fromkeys([MODEL, "gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]))
+MODEL    = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+MODELS_TO_TRY = list(dict.fromkeys([MODEL, "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash"]))
 
 # CORS allowlist — comma-separated origins in ALLOWED_ORIGINS env var.
 # Defaults to localhost dev origins + production Firebase Hosting domains.
