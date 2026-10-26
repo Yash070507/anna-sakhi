@@ -172,6 +172,36 @@ export function useChat() {
     await loadMessagesForSession(convId);
   }, [activeConvId, loadMessagesForSession]);
 
+  // ── Delete a conversation ─────────────────────────────────
+  const deleteConversation = useCallback(async (convId, e) => {
+    e?.stopPropagation?.();
+    if (!convId) return;
+
+    // Optimistically remove from conversations list
+    setConversations((prev) => prev.filter((c) => c.id !== convId));
+
+    // If the active conversation was deleted, switch to first remaining or clear
+    if (activeConvId === convId) {
+      const remaining = conversations.filter((c) => c.id !== convId);
+      if (remaining.length > 0) {
+        setActiveConvId(remaining[0].id);
+        await loadMessagesForSession(remaining[0].id);
+      } else {
+        setActiveConvId(null);
+        setMessages([]);
+        setIsNewChat(true);
+      }
+    }
+
+    if (user) {
+      try {
+        await deleteSession(user, convId);
+      } catch (err) {
+        console.error('[useChat] Failed to delete session:', err.message);
+      }
+    }
+  }, [activeConvId, conversations, loadMessagesForSession, user]);
+
   // ── Send a message ────────────────────────────────────────
   const sendMessage = useCallback(async (payload) => {
     const isPlain    = typeof payload === 'string';
@@ -337,6 +367,7 @@ export function useChat() {
     removeUserMemory,
     startNewChat,
     selectConversation,
+    deleteConversation,
     sendMessage,
   };
 }

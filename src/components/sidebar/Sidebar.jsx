@@ -6,7 +6,7 @@ import { UserMenu } from './UserMenu';
 /**
  * Sidebar inner content — shared between desktop sidebar and mobile drawer
  */
-export function SidebarContent({ conversations, activeConvId, onSelectConv, onNewChat, onClose }) {
+export function SidebarContent({ conversations, activeConvId, onSelectConv, onNewChat, onDeleteConv, onClose }) {
   return (
     <div className="flex flex-col h-full bg-[var(--bg-sidebar)]">
       {/* ── Branding header ── */}
@@ -56,6 +56,7 @@ export function SidebarContent({ conversations, activeConvId, onSelectConv, onNe
         conversations={conversations}
         activeConvId={activeConvId}
         onSelect={(id) => { onSelectConv(id); onClose?.(); }}
+        onDelete={onDeleteConv}
       />
 
       {/* ── User menu ── */}
@@ -69,7 +70,7 @@ export function SidebarContent({ conversations, activeConvId, onSelectConv, onNe
 /**
  * Desktop sidebar — fixed, always visible on md+
  */
-export function Sidebar({ conversations, activeConvId, onSelectConv, onNewChat }) {
+export function Sidebar({ conversations, activeConvId, onSelectConv, onNewChat, onDeleteConv }) {
   return (
     <aside
       className="hidden md:flex flex-col w-[280px] flex-shrink-0 border-r border-[var(--border-subtle)] h-full"
@@ -80,6 +81,7 @@ export function Sidebar({ conversations, activeConvId, onSelectConv, onNewChat }
         activeConvId={activeConvId}
         onSelectConv={onSelectConv}
         onNewChat={onNewChat}
+        onDeleteConv={onDeleteConv}
       />
     </aside>
   );

@@ -20,6 +20,7 @@ export default function ChatPage() {
     memoryNotification,
     startNewChat,
     selectConversation,
+    deleteConversation,
     sendMessage,
   } = useChat();
 
@@ -37,6 +38,7 @@ export default function ChatPage() {
         activeConvId={activeConvId}
         onSelectConv={selectConversation}
         onNewChat={startNewChat}
+        onDeleteConv={deleteConversation}
       />
 
       {/* ── Mobile drawer ── */}
@@ -46,6 +48,7 @@ export default function ChatPage() {
           activeConvId={activeConvId}
           onSelectConv={selectConversation}
           onNewChat={startNewChat}
+          onDeleteConv={deleteConversation}
           onClose={() => setDrawerOpen(false)}
         />
       </Drawer>
